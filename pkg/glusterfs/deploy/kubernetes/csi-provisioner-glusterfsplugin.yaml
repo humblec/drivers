@@ -1,0 +1,62 @@
+# This YAML file contains attacher & csi driver API objects,
+# which are necessary to run external csi provisioner for glusterfs.
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: csi-provisioner-glusterfsplugin
+  labels:
+    app: csi-provisioner-glusterfsplugin
+spec:
+  selector:
+    app: csi-provisioner-glusterfsplugin
+  ports:
+    - name: dummy
+      port: 12345
+
+---
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: csi-provisioner-glusterfsplugin
+spec:
+  serviceName: "csi-provisioner-glusterfsplugin"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: csi-provisioner-glusterfsplugin
+    spec:
+      serviceAccount: csi-provisioner
+      containers:
+        - name: csi-provisioner
+          image: docker.io/k8scsi/csi-provisioner
+          args:
+            - "--provisioner=csi-glusterfsplugin"
+            - "--csi-address=$(ADDRESS)"
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+        - name: glusterfs
+          image: docker.io/humblec/glusterfsplugin:v0.8
+          args :
+            - "--nodeid=$(NODE_ID)"
+            - "--endpoint=$(CSI_ENDPOINT)"
+          env:
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: CSI_ENDPOINT
+              value: unix://plugin/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /plugin
+      volumes:
+        - name: socket-dir
+          emptyDir:

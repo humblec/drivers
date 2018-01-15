@@ -12,30 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY: all flexadapter nfs hostpath iscsi cinder clean
+.PHONY: all glusterfs clean
 
-all: flexadapter nfs hostpath iscsi cinder
+all: glusterfs 
 
 test:
 	go test github.com/kubernetes-csi/drivers/pkg/... -cover
 	go vet github.com/kubernetes-csi/drivers/pkg/...
 
-flexadapter:
+glusterfs:
 	if [ ! -d ./vendor ]; then dep ensure; fi
-	go build -o _output/flexadapter ./app/flexadapter
-nfs:
-	if [ ! -d ./vendor ]; then dep ensure; fi
-	go build -o _output/nfsplugin ./app/nfsplugin
-hostpath:
-	if [ ! -d ./vendor ]; then dep ensure; fi
-	go build -i -o _output/hostpathplugin ./app/hostpathplugin
-iscsi:
-	if [ ! -d ./vendor ]; then dep ensure; fi
-	go build -o _output/iscsiplugin ./app/iscsiplugin
-cinder:
-	if [ ! -d ./vendor ]; then dep ensure; fi
-	go build -o _output/cinderplugin ./app/cinderplugin
-
+	go build -o _output/glusterfsplugin ./app/glusterfsplugin
 clean:
 	go clean -r -x
 	-rm -rf _output
